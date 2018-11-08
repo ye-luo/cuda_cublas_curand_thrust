@@ -36,6 +36,11 @@ void gpu_blas_mmul(const float *A, const float *B, float *C, const int m, const 
 	cublasHandle_t handle;
 	cublasCreate(&handle);
 
+	// Create a stream
+	cudaStream_t hstream;
+	cudaStreamCreate(&hstream);
+	cublasSetStream(handle,hstream);
+
 	// Do the actual multiplication
 	cublasSgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, alpha, A, lda, B, ldb, beta, C, ldc);
 
@@ -55,12 +60,12 @@ void print_matrix(const thrust::device_vector<float> &A, int nr_rows_A, int nr_c
     std::cout << std::endl;
 }
 
-int main() {
+int run() {
 	// Allocate 3 arrays on CPU
 	int nr_rows_A, nr_cols_A, nr_rows_B, nr_cols_B, nr_rows_C, nr_cols_C;
 
 	// for simplicity we are going to use square arrays
-	nr_rows_A = nr_cols_A = nr_rows_B = nr_cols_B = nr_rows_C = nr_cols_C = 3;
+	nr_rows_A = nr_cols_A = nr_rows_B = nr_cols_B = nr_rows_C = nr_cols_C = 4096;
 
 	thrust::device_vector<float> d_A(nr_rows_A * nr_cols_A), d_B(nr_rows_B * nr_cols_B), d_C(nr_rows_C * nr_cols_C);
 
@@ -70,16 +75,16 @@ int main() {
 
 	// Optionally we can print the data
 	std::cout << "A =" << std::endl;
-	print_matrix(d_A, nr_rows_A, nr_cols_A);
+	//print_matrix(d_A, nr_rows_A, nr_cols_A);
 	std::cout << "B =" << std::endl;
-	print_matrix(d_B, nr_rows_B, nr_cols_B);
+	//print_matrix(d_B, nr_rows_B, nr_cols_B);
 
 	// Multiply A and B on GPU
 	gpu_blas_mmul(thrust::raw_pointer_cast(&d_A[0]), thrust::raw_pointer_cast(&d_B[0]), thrust::raw_pointer_cast(&d_C[0]), nr_rows_A, nr_cols_A, nr_cols_B);
 
 	//Print the result
 	std::cout << "C =" << std::endl;
-	print_matrix(d_C, nr_rows_C, nr_cols_C);
+	//print_matrix(d_C, nr_rows_C, nr_cols_C);
 
 	return 0;
 }
